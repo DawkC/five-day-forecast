@@ -1,4 +1,4 @@
-# five-day-forecast
+# Five-Day-Forecast
 
 - A dynamic five-day weather dashboard that can search the weather by city and store multiple cities.
 
