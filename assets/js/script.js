@@ -1,0 +1,125 @@
+$(document).ready(function () {
+    // console.log("ready!");
+
+    var searchCityBtn = document.querySelector('#search-btn');
+    
+    var prevCity = "";
+
+    function getWeather() {
+        event.preventDefault();
+        //empty previous search results
+        $("#current-city").empty();
+        $("#forecastInfo").empty();
+
+        var temp = '';
+        var humidity = '';
+        var windSpeed = '';
+        var lat = '';
+        var lon = '';
+        var uvi = '';
+        var city = '';
+        var icon = '';
+        var localStorCity = '';
+        var currentCity = document.querySelector('#inlineFormInput').value;
+        var openWeatherURL = "https://api.openweathermap.org/data/2.5/weather?q=" + currentCity + "&units=metric&APPID=85b21d3b698426e3aa80d83ace2b4d43";
+        //console.log(openWeatherURL);
+        var uvUrl = '';
+        var forecastUrl = '';
+        var iconUrl = '';
+        var tag = '';
+        var currentDate = moment();
+
+        fetch(openWeatherURL)
+            .then(function (res) {
+                return res.json();
+            })
+            .then(function (data) {
+                city = data.name;
+                temp = data.main.temp;
+                humidity = data.main.humidity;
+                windSpeed = data.wind.speed;
+                lat = data.coord.lat;
+                lon = data.coord.lon;
+                icon = data.weather[0].icon;
+                uvUrl = "https://api.openweathermap.org/data/2.5/uvi?lat=" + lat + "&lon=" + lon + "&appid=85b21d3b698426e3aa80d83ace2b4d43";
+                forecastUrl = "https://api.openweathermap.org/data/2.5/forecast?q=" + city + "&units=metric&appid=85b21d3b698426e3aa80d83ace2b4d43";
+                iconUrl = "https://openweathermap.org/img/w/" + icon + ".png";
+                localStorage.setItem("city", city);
+                $("#intro").hide();
+                $("#main").addClass("border border-secondary")
+                $("#current-city").append("<div class='h2 p-2 ml-2 d-inline-block font-weight-bold mr-2'>" + city + "</div>");
+                $("#current-city").append("(" + currentDate.format('L') + ")");
+                tag = '<img src="' + iconUrl + '" alt="weather icon">'
+                $("#current-city").append(tag);
+                $("#current-city").append("<div class='p-2 m-2'>Temperature: " + temp + " °C</div>");
+                $("#current-city").append("<div class='p-2 m-2'>Humidity: " + humidity + "%</div>");
+                $("#current-city").append("<div class='p-2 m-2'>Wind Speed: " + windSpeed + " MPH</div>");
+                localStorCity = localStorage.getItem("city");
+                $("#prev-cities").append('<button type="button" class="prev-search list-group-item list-group-item-action">' + localStorCity + '</button>')
+                                
+
+            })
+            .then(function () {
+                fetch(uvUrl)
+                    .then(function (res) {
+                        return res.json();
+                    })
+                    .then(function (data) {
+                        uvi = data.value;
+                        $("#current-city").append("<div class='p-2 m-2'>UV Index: <span id='uv-rate'>" + uvi + "</span></div>");
+                        //  make the UV index change colors for favorable(green), moderate(yellow) or severe(red) conditions
+                        if (uvi < 2) {
+                            console.log("favorable");
+                            $("#uv-rate").addClass('bg-success');
+                        } else if (uvi < 5) {
+                            console.log("moderate");
+                            $("#uv-rate").addClass('bg-warning');
+                        } else {
+                            console.log("severe");
+                            $("#uv-rate").addClass('bg-danger');
+                        } return;
+                    
+                    })
+            })
+            .then(function () { // another fetch to get the 5 day forcast
+                fetch(forecastUrl)
+                    .then(function (res) {
+                        return res.json();
+                    })
+                    .then(function (data) {
+                        var forcast = "";
+                        $.each(data.list, function (index, val) {
+                            // grab forcast objects in data.list for hour = 12 so we get 1 forcast per day
+                            if (((val.dt_txt.split(' '))[1]) === '12:00:00') {
+                                //format the date to Gregorian style
+                                forecastDate = val.dt_txt.split(' ')[0];
+                                forecastDate = (forecastDate.split("-"));
+                                gregDate = forecastDate[1] + "-" + forecastDate[2] + "-" + forecastDate[0];
+                                console.log(gregDate);
+                                // build forcast variable with html
+                                forcast += "<div class='card bg-primary text-white p-2 m-2' style='width: 10rem;>" // Open div for card tag
+                                forcast += "<div class='card-body'>"
+                                forcast += "<h6 class='card-title'>" + gregDate + "</h6>"
+                                forcast += "<img src='https://openweathermap.org/img/w/" + val.weather[0].icon + ".png'>"
+                                forcast += "<div>Temp: " + val.main.temp + " °C </div>"
+                                forcast += "<div>Humidity: " + val.main.humidity + " %</div>"
+                                forcast += "</div>"    // close card body
+                                forcast += "</div>" // Close div for card tag
+                                $('#forcastTitle').removeClass('d-none');
+                                //inject forcast into HTML
+                                $("#forecastInfo").html(forcast);
+                            }
+                        });
+
+                        
+                    })
+            })
+        $("#inlineFormInput").val("");  // clear out the search input
+    }
+        
+    searchCityBtn.addEventListener("click", function () {
+        getWeather();
+
+    });
+    
+});
